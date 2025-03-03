@@ -64,11 +64,8 @@ rm -rf NeXnetInt NeXnetInt.tar.gz
 
 ## 🖥️ Usage 
 
-Run **NeXnetInt** from anywhere using:  
-
-```bash
-nexnetint
-```
+Run **NeXnetInt** from anywhere using:
+`nexnetint`
 - **Temporary NIC Switching**  Switch interfaces on the fly via the TUI.
 	- 🌐 indicates the default interface, ⚡ the temporary one.
 	- Changes revert on reboot or manually in the TUI.
