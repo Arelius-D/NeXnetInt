@@ -1,0 +1,17 @@
+[Unit]
+Description=NeXnetInt Interface Service
+After=network.target
+Wants=network.target
+Before=network-online.target
+
+[Service]
+ExecStart=/usr/local/lib/nexnetint/interface_control.sh --default
+Type=oneshot
+RemainAfterExit=yes
+Restart=on-failure
+RestartSec=5s
+StartLimitInterval=30s
+StartLimitBurst=3
+
+[Install]
+WantedBy=multi-user.target
