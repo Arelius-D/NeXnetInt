@@ -1,7 +1,7 @@
 #!/bin/bash
 
 SCRIPT_NAME="nic_switch.sh"
-VERSION="0.55"  # Bumped for timestamp logic
+VERSION="0.55"
 CALLING_SCRIPT="$SCRIPT_NAME"
 SCRIPT_VERSION="$VERSION"
 SYSTEM_DIR="/usr/local/lib/nexnetint"
@@ -14,27 +14,25 @@ log_message() {
     echo "$message"
 }
 
-# Run management.sh silently with sudo and wait
 log_message "🪢  Switch Interface (Temporary Session Change)..."
 sudo "$SYSTEM_DIR/management.sh" > /dev/null 2>&1
 if [ $? -ne 0 ]; then
     log_message "❌ management.sh failed to execute (exit code $?)."
     exit 1
 fi
-sleep 1  # Proven sufficient
+sleep 1
 if ! sudo [ -f "$DATA_DIR/main_network_manager.txt" ] || ! sudo [ -s "$DATA_DIR/main_network_manager.txt" ]; then
     log_message "❌ management.sh output file not found or empty at $DATA_DIR/main_network_manager.txt."
     exit 1
 fi
 
-# Run interface.sh --view only if current_network_interface.txt is missing or empty
 if ! sudo [ -f "$DATA_DIR/current_network_interface.txt" ] || ! sudo [ -s "$DATA_DIR/current_network_interface.txt" ]; then
     sudo "$SYSTEM_DIR/interface.sh" --view > /dev/null 2>&1
     if [ $? -ne 0 ]; then
         log_message "❌ interface.sh --view failed to execute (exit code $?)."
         exit 1
     fi
-    sleep 1  # Proven sufficient
+    sleep 1
     if ! sudo [ -f "$DATA_DIR/current_network_interface.txt" ] || ! sudo [ -s "$DATA_DIR/current_network_interface.txt" ]; then
         log_message "❌ interface.sh --view output file not found or empty at $DATA_DIR/current_network_interface.txt."
         exit 1
@@ -45,13 +43,12 @@ NETWORK_MANAGER=$(sudo cat "$DATA_DIR/main_network_manager.txt" 2>/dev/null || e
 CURRENT_MAIN=$(sudo cat "$DATA_DIR/current_network_interface.txt" 2>/dev/null || echo "none")
 NET_MONITOR_OUTPUT="$DATA_DIR/net_monitor_output.txt"
 
-# Run net_monitor.sh silently with sudo and wait
 sudo "$SYSTEM_DIR/net_monitor.sh" > /dev/null 2>&1
 if [ $? -ne 0 ]; then
     log_message "❌ net_monitor.sh failed to execute (exit code $?)."
     exit 1
 fi
-sleep 1  # Proven sufficient
+sleep 1
 if ! sudo [ -f "$NET_MONITOR_OUTPUT" ] || ! sudo [ -s "$NET_MONITOR_OUTPUT" ]; then
     log_message "❌ net_monitor.sh output file not found or empty at $NET_MONITOR_OUTPUT."
     exit 1
@@ -81,7 +78,7 @@ if ! sudo [ -f "$DATA_DIR/switch_state.inf" ]; then
         echo "$TIMESTAMP info:end"
     } | sudo tee -a "$DATA_DIR/switch_state.inf" >/dev/null
 fi
-# Update CURRENT_MAIN and current_session_nic from .inf if it exists
+
 if sudo [ -f "$DATA_DIR/switch_state.inf" ]; then
     CURRENT_MAIN=$(sudo grep "original:" "$DATA_DIR/switch_state.inf" | head -n 1 | cut -d: -f4)
     if sudo grep -q "switched:" "$DATA_DIR/switch_state.inf"; then
@@ -196,7 +193,6 @@ if [ "$choice" = "r" ] || [ "$choice" = "R" ]; then
         esac
     done
 
-    # Delete all existing default routes.
     ip route | grep "^default" | while IFS= read -r line; do
         iface=$(echo "$line" | awk '{print $5}')
         gateway=$(echo "$line" | awk '{print $3}')
@@ -204,7 +200,6 @@ if [ "$choice" = "r" ] || [ "$choice" = "R" ]; then
         sudo ip route del default via "$gateway" dev "$iface" metric "$metric" 2>/dev/null || log_message "Warning: Failed to remove route for $iface"
     done
 
-    # Restore only the default route for the original interface
     ORIGINAL_INTERFACE=$(sudo grep "original:" "$DATA_DIR/switch_state.inf" | head -n 1 | cut -d: -f4)
     original_line=$(sudo grep "original:.*$ORIGINAL_INTERFACE" "$DATA_DIR/switch_state.inf" | head -n 1)
     new_gateway=$(echo "$original_line" | cut -d: -f6)
@@ -219,7 +214,6 @@ if [ "$choice" = "r" ] || [ "$choice" = "R" ]; then
         echo "$TIMESTAMP info:end"
     } | sudo tee -a "$DATA_DIR/switch_state.inf" >/dev/null
 
-    # Remove any switched lines so that current_session_nic is cleared
     sudo sed -i '/switched:/d' "$DATA_DIR/switch_state.inf"
 
     log_message "Restarting network-dependent processes..."

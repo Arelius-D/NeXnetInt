@@ -24,7 +24,6 @@ setup_dirs() {
 
 install_utility() {
     setup_dirs
-    # Copy supporting scripts to SYSTEM_DIR
     for script in dependencies.sh interface.sh management.sh net_monitor.sh nic_switch.sh service_management.sh; do
         if [ -f "$script" ]; then
             sudo cp "$script" "$SYSTEM_DIR/"
@@ -34,7 +33,6 @@ install_utility() {
             log_message "Warning: $script not found in current directory"
         fi
     done
-    # Install this script as /usr/local/bin/nexnetint
     sudo cp -v "$(pwd)/nexnetint.sh" "/usr/local/bin/nexnetint"
     if [ $? -eq 0 ]; then
         log_message "Copy succeeded: $(pwd)/nexnetint.sh to /usr/local/bin/nexnetint"
@@ -44,12 +42,10 @@ install_utility() {
     fi
     sudo chmod +x "/usr/local/bin/nexnetint"
     log_message "Set executable permissions on /usr/local/bin/nexnetint"
-    # Copy assets
     sudo cp assets/interface_control.sh "$ASSETS_DIR/"
     sudo cp assets/nexnetint.service "$ASSETS_DIR/"
     sudo chmod +x "$ASSETS_DIR/interface_control.sh"
     log_message "Copied assets to $ASSETS_DIR"
-    # Verify installation
     if [ -f "/usr/local/bin/nexnetint" ] && [ -x "/usr/local/bin/nexnetint" ]; then
         log_message "Verified: /usr/local/bin/nexnetint exists and is executable"
     else
@@ -67,7 +63,6 @@ show_versions() {
     done
 }
 
-# Existing block to clear stale state based on timestamp (if any)
 if sudo [ -f "$DATA_DIR/switch_state.inf" ]; then
     TIMESTAMP=$(sudo head -n 1 "$DATA_DIR/switch_state.inf" | cut -d' ' -f1-2)
     if sudo grep -q "^$TIMESTAMP switched:" "$DATA_DIR/switch_state.inf"; then
@@ -81,14 +76,11 @@ if sudo [ -f "$DATA_DIR/switch_state.inf" ]; then
     fi
 fi
 
-# Function to validate switch state against current environment
 validate_switch_state() {
     if sudo [ -f "$DATA_DIR/switch_state.inf" ]; then
         local stale=0
-        # Process each "original:" line in the file
         while IFS= read -r line; do
             if echo "$line" | grep -q "original:"; then
-                # Extract interface (field 4) and MAC (everything after "mac:")
                 iface=$(echo "$line" | cut -d: -f4)
                 stored_mac=$(echo "$line" | sed 's/.*mac://')
                 current_mac=$(sudo cat "/sys/class/net/$iface/address" 2>/dev/null || echo "unknown")
@@ -105,7 +97,6 @@ validate_switch_state() {
     fi
 }
 
-# Call the validation function before showing the menu
 validate_switch_state
 
 show_tui() {
